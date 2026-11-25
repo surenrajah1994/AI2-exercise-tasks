@@ -89,11 +89,13 @@ def objective(trial):
 
 study = optuna.create_study(direction="maximize")
 study.optimize(objective, n_trials=5)
+    #           ... and so on for dropout and batch_size.
 
     # TODO: Call train_and_evaluate(config) and return the result.
     #       This trains the model with the suggested hyperparameters
     #       and returns the best validation accuracy.
     val_accuracy = train_and_evaluate(config)       
+    val_accuracy = None # TODO: Replace "None" with the actual call to train_and_evaluate(config)
 
     return val_accuracy
 
@@ -111,8 +113,9 @@ def main(config_path):
     #           validation accuracy, not the lowest.
     #   Step 3: Optionally set study_name to the experiment name from config.
     study = optuna.create_study(direction="maximize", study_name=base_config["experiment_name"])        
+    study = None # TODO: Replace "None" with the actual call to optuna.create_study()
 
-    # TODO: Run the optimization.
+    # Run the optimization.
     #
     #   Step 1: Call study.optimize().
     #   Step 2: The first argument is the objective function. Since our
@@ -120,7 +123,10 @@ def main(config_path):
     #           Optuna passes only the trial, use a lambda:
     #           lambda trial: objective(trial, base_config)
     #   Step 3: Set n_trials=5 in the config file (config["training"]["n_trials"]) to limit the number of trials.
-
+    study.optimize(
+        lambda trial: objective(trial, base_config),
+        n_trials=base_config["training"]["n_trials"],  # TODO: go to the config file and set this to 5 for now (if not already set)
+    )
 
     # --- Print results ---
     print("\n" + "=" * 60)
@@ -129,11 +135,18 @@ def main(config_path):
 
     print(f"\nNumber of finished trials: {len(study.trials)}")
 
-    # TODO: Print the best trial's results.
-    #
+    # Print the best trial's results.
     #   Step 1: Get the best trial using study.best_trial.
+    best_trial = study.best_trial
+    
     #   Step 2: Print its .value (the best validation accuracy).
+    print(f"\nBest trial:")
+    print(f"  Value (val accuracy): {best_trial.value:.4f}")
+    
     #   Step 3: Print its .params (dict of hyperparameters that achieved it).
+    print(f"  Params:")
+    for key, value in best_trial.params.items():
+        print(f"    {key}: {value}")
 
 
     # --- Print all trials summary ---

@@ -25,7 +25,7 @@ def get_train_transforms(image_size, augmentation=True):
         torchvision.transforms.Compose
     """
     if augmentation:
-        # TODO: Create a Compose pipeline with augmentation.
+        # Build Compose pipeline with random augmentation.
         #
         #   Step 1: RandomResizedCrop(image_size) — randomly crop a region
         #           and resize it to image_size. This provides both scale
@@ -43,9 +43,17 @@ def get_train_transforms(image_size, augmentation=True):
             transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+            transforms.ColorJitter(
+                brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1
+            ),
+            transforms.ToTensor(),
+            transforms.Normalize(
+                mean=[0.485, 0.456, 0.406],
+                std=[0.229, 0.224, 0.225],
+            ),
         ])
     else:
-        # TODO: Create a Compose pipeline WITHOUT augmentation.
+        # Build a Compose pipeline WITHOUT augmentation
         #
         #   Step 1: Resize(image_size + 32) — resize to slightly larger.
         #   Step 2: CenterCrop(image_size) — crop the center to exact size.
@@ -53,12 +61,18 @@ def get_train_transforms(image_size, augmentation=True):
         #           random variation.
         #   Step 3: ToTensor()
         #   Step 4: Normalize with same ImageNet mean and std.
+       
         transform = transforms.Compose([
             transforms.Resize(image_size + 32),
             transforms.CenterCrop(image_size),
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         ])                  
+            transforms.Normalize(
+                mean=[0.485, 0.456, 0.406],
+                std=[0.229, 0.224, 0.225],
+            ),
+        ])
 
     return transform
 
@@ -84,6 +98,13 @@ def get_val_transforms(image_size):
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])        
+    #   Step 1: Resize(image_size + 32) — resize to slightly larger.
+    #   Step 2: CenterCrop(image_size) — crop the center to exact size.
+    #           Resize + CenterCrop ensures consistent framing without
+    #           random variation.
+    #   Step 3: ToTensor()
+    #   Step 4: Normalize with same ImageNet mean and std.
+    transform = None # TODO: remove "None" and fill in your solution!
 
     return transform
 
