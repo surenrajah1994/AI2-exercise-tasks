@@ -6,8 +6,8 @@ Define separate transform pipelines for training and validation.
 Training transforms include random augmentations to improve generalization.
 Validation transforms are deterministic — no randomness.
 
-Run this script to verify:
-    python src/transforms.py
+Run this script to verify:python src/transforms.py
+    
 """
 
 from torchvision import transforms
@@ -37,7 +37,13 @@ def get_train_transforms(image_size, augmentation=True):
         #           and scales pixel values from [0, 255] to [0, 1].
         #   Step 5: Normalize with ImageNet mean and std.
         #           mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-        transform = None
+        transform = transforms.Compose([
+            transforms.RandomResizedCrop(image_size),
+            transforms.RandomHorizontalFlip(),
+            transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        ])
     else:
         # TODO: Create a Compose pipeline WITHOUT augmentation.
         #
@@ -47,7 +53,12 @@ def get_train_transforms(image_size, augmentation=True):
         #           random variation.
         #   Step 3: ToTensor()
         #   Step 4: Normalize with same ImageNet mean and std.
-        transform = None
+        transform = transforms.Compose([
+            transforms.Resize(image_size + 32),
+            transforms.CenterCrop(image_size),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        ])                  
 
     return transform
 
@@ -67,7 +78,12 @@ def get_val_transforms(image_size):
     #       Resize → CenterCrop → ToTensor → Normalize.
     #       Validation must always produce identical output for the
     #       same input, so no random transforms.
-    transform = None
+    transform = transforms.Compose([
+        transforms.Resize(image_size + 32),
+        transforms.CenterCrop(image_size),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    ])        
 
     return transform
 

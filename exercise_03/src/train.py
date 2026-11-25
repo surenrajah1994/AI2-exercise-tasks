@@ -10,6 +10,7 @@ Usage:
 Project structure inspired by: https://github.com/victoresque/pytorch-template
 """
 
+from csv import writer
 import os
 import sys
 import argparse
@@ -54,17 +55,24 @@ def train_one_epoch(model, dataloader, criterion, optimizer, device, log_interva
         # TODO: Complete the training step.
         #
         #   Step 1: Move images and labels to the device using .to(device).
+        images = images.to(device)      
+        labels = labels.to(device)
         #
         #   Step 2: Clear old gradients from the optimizer.
+        optimizer.zero_grad()       
         #
         #   Step 3: Forward pass — get model outputs from the images.
+        outputs = model(images)
         #
         #   Step 4: Compute the loss using the criterion.
         #           Pass (outputs, labels) — not (labels, outputs).
+        loss = criterion(outputs, labels)
         #
         #   Step 5: Backward pass — compute gradients from the loss.
+        loss.backward()
         #
         #   Step 6: Update weights with the optimizer.
+        optimizer.step()
 
 
         # --- Accumulate metrics (do not modify) ---
@@ -102,8 +110,14 @@ def validate(model, dataloader, criterion, device):
     #       Inside, for each batch:
     #
     #   Step 1: Move images and labels to device.
-    #   Step 2: Forward pass only — no backward, no optimizer step.
+    images = images.to(device)
+    labels = labels.to(device)      
+    
+    #   Step 2: Forward pass only — no backward, no optimizer step. 
+    outputs = model(images)
+    
     #   Step 3: Compute loss (for logging, not for training).
+    loss = criterion(outputs, labels)
     #
     #   The metric accumulation code below handles the rest.
 
@@ -136,7 +150,7 @@ def main(config_path):
     #   The log directory should include the experiment name so each
     #   experiment gets its own subfolder. Combine config["logging"]["log_dir"]
     #   and config["experiment_name"] using os.path.join().
-    log_dir = None
+    log_dir = os.path.join(config["logging"]["log_dir"], config["experiment_name"]) 
     writer = SummaryWriter(log_dir=log_dir)
 
     image_size = config["data"]["image_size"]
@@ -146,14 +160,27 @@ def main(config_path):
     #   Use PlantWildDataset with the appropriate root_dir
     #   (os.path.join with "train" or "val") and transforms.
     # Check the config file for specific keywords related to root directory and datasets
-    train_dataset = None
-    val_dataset = None
+    
+    train_dataset = PlantWildDataset(
+        root_dir=os.path.join(config["data"]["root_dir"], "train"),
+        transform=get_train_transforms(image_size, augmentation)
+    )
+
+    val_dataset = PlantWildDataset(
+        root_dir=os.path.join(config["data"]["root_dir"], "val"),
+        transform=get_val_transforms(image_size)        
+    )
 
     # TODO: Create DataLoaders for both datasets.
     #   Use batch_size and num_workers from config["data"].
     #   Training: shuffle=True. Validation: shuffle=False.
-    train_loader = None
-    val_loader = None
+
+    val_loader = DataLoader(
+        val_dataset,
+        batch_size=config["data"]["batch_size"],
+        shuffle=False,
+        num_workers=config["data"]["num_workers"]
+    )
 
     print(f"Train samples: {len(train_dataset)} | Val samples: {len(val_dataset)}")
     print(f"Classes: {train_dataset.classes}")
@@ -161,18 +188,23 @@ def main(config_path):
     # TODO: Instantiate the model.
     #   Use PlantCNN with num_classes and dropout from config.
     #   Move to device.
-    model = None
+    model = PlantCNN(num_classes=config["model"]["num_classes"], dropout=config["model"]["dropout"]).to(device) 
 
     print(f"Model parameters: {count_parameters(model):,}")
 
     # TODO: Define the loss function — nn.CrossEntropyLoss().
-    criterion = None
+    criterion = nn.CrossEntropyLoss()   
 
     # TODO: Define the optimizer based on config["training"]["optimizer"].
     #   If "adam", use torch.optim.Adam.
     #   If "sgd", use torch.optim.SGD with momentum=0.9.
     #   Pass learning_rate and weight_decay from config.
-    optimizer = None
+    if config["training"]["optimizer"] == "adam":   
+        optimizer = torch.optim.Adam(model.parameters(), lr=config["training"]["learning_rate"], weight_decay=config["training"]["weight_decay"])
+    elif config["training"]["optimizer"] == "sgd":
+        optimizer = torch.optim.SGD(model.parameters(), lr=config["training"]["learning_rate"], weight_decay=config["training"]["weight_decay"], momentum=0.9)
+    else:
+        raise ValueError(f"Unsupported optimizer: {config['training']['optimizer']}")   
 
     # TODO: Log sample images to TensorBoard for visual verification.
     #   Fetch one batch from train_loader using next(iter(...)).
@@ -199,15 +231,23 @@ def main(config_path):
         # TODO: Log four scalar metrics to TensorBoard using writer.add_scalar():
         #   "Loss/train", "Loss/val", "Accuracy/train", "Accuracy/val"
         #   Use epoch as the global_step.
-
+writer.add_scalar("Loss/train", train_loss, epoch)
+writer.add_scalar("Loss/val", val_loss, epoch)
+writer.add_scalar("Accuracy/train", train_acc, epoch)
+writer.add_scalar("Accuracy/val", val_acc, epoch)       
 
         # TODO: Save checkpoint if validation accuracy improved.
         #   Compare val_acc with best_val_acc. If better, update best_val_acc
         #   and call save_checkpoint(). Save to the path built from
         #   config["checkpoint"]["save_dir"] and experiment_name + "_best.pt".
-
+if val_acc > best_val_acc:
+            best_val_acc = val_acc
+            checkpoint_path = os.path.join(config["checkpoint"]["save_dir"], config["experiment_name"] + "_best.pt")
+            save_checkpoint(model, optimizer, epoch, val_acc, checkpoint_path)
+            print(f"  Saved new best checkpoint to: {checkpoint_path}")
 
     # TODO: Close the TensorBoard writer.
+    writer.close()
 
     print(f"\nTraining complete. Best val accuracy: {best_val_acc:.4f}")
 

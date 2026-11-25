@@ -43,13 +43,17 @@ def compute_accuracy(outputs, targets):
     #
     #   Step 1: Get predicted class for each sample. The predicted class
     #           is the index with the highest logit value — use .argmax(dim=1).
-    predictions = None
+    predictions = outputs.argmax(dim=1)
+    
     #   Step 2: Compare predictions with targets to count correct ones.
     #           (predictions == targets) gives a boolean tensor.
     #           .sum() counts the True values. Use .item() to convert single-element tensors to Python floats.
-    correct = None
+    correct = (predictions == targets).sum().item()
+    
+    total = targets.size(0)  # Get the total number of samples
     # Step 3: Get the toal count of the target (hint: .size(0)) and divide correct count by total count to compute accuracy
-    accuracy = None
+    accuracy = correct / total
+    
     return accuracy
 
 

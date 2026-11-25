@@ -25,12 +25,12 @@ class PlantCNN(nn.Module):
     """
 
     def __init__(self, num_classes=10, dropout=0.5):
-        super().__init__()
+        super().__init__()                                                         
 
         # TODO: Define self.features as nn.Sequential with three conv blocks.
         #
         #   Each block follows the same pattern:
-        #       Conv2d → BatchNorm2d → ReLU → MaxPool2d(2)
+        #       Conv2d → BatchNorm2d → ReLU → MaxPool2d(2)      
         #
         #   Block 1: 3 input channels → 32 output channels, kernel_size=3, padding=1
         #   Block 2: 32 → 64
@@ -39,7 +39,7 @@ class PlantCNN(nn.Module):
         #   padding=1 with kernel_size=3 keeps spatial dimensions unchanged
         #   before pooling. Each MaxPool2d(2) halves the dimensions.
         #   BatchNorm2d takes the number of channels as its argument.
-        self.features = None
+        self.features = None    
 
         # TODO: Define self.pool as nn.AdaptiveAvgPool2d(1).
         #   This reduces any spatial size to 1×1, so the classifier
@@ -66,7 +66,11 @@ class PlantCNN(nn.Module):
         #
         #   The flatten step converts (B, 128, 1, 1) → (B, 128).
         #   Use x.view(x.size(0), -1) to flatten while keeping batch dim.
-        pass
+        x = self.features(x)
+        x = self.pool(x)
+        x = x.view(x.size(0), -1)
+        x = self.classifier(x)
+        return x
 
 
 def count_parameters(model):

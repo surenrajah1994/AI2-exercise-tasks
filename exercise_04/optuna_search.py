@@ -18,6 +18,7 @@ import sys
 import copy
 import argparse
 
+from networkx import config
 import yaml
 import optuna
 import matplotlib
@@ -78,19 +79,29 @@ def objective(trial, base_config):
     #           config["training"]["learning_rate"] = lr
     #           config["model"]["dropout"] = dropout
     #           config["data"]["batch_size"] = batch_size
+    import optuna
+
+def objective(trial):
+    lr = trial.suggest_float("lr", 1e-5, 1e-2, log=True)
+    dropout = trial.suggest_float("dropout", 0.2, 0.7)
+    # ... train model with these hyperparameters ...
+    return val_accuracy
+
+study = optuna.create_study(direction="maximize")
+study.optimize(objective, n_trials=5)
 
     # TODO: Call train_and_evaluate(config) and return the result.
     #       This trains the model with the suggested hyperparameters
     #       and returns the best validation accuracy.
-    val_accuracy = None
+    val_accuracy = train_and_evaluate(config)       
 
     return val_accuracy
 
 
-def main(config_path):
+def main(config_path): 
     """Run Optuna hyperparameter search."""
     base_config = load_config(config_path)
-    print(f"Loaded base config from: {config_path}")
+    print(f"Loaded base config from: {config_path}")    
     print(f"Starting Optuna hyperparameter search...")
 
     # TODO: Create an Optuna study.
@@ -99,7 +110,7 @@ def main(config_path):
     #   Step 2: Set direction="maximize" — we want the highest
     #           validation accuracy, not the lowest.
     #   Step 3: Optionally set study_name to the experiment name from config.
-    study = None
+    study = optuna.create_study(direction="maximize", study_name=base_config["experiment_name"])        
 
     # TODO: Run the optimization.
     #
